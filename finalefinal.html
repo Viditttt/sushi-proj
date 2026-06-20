@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sushi Bento Box</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Noto+Serif+JP:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red: #C0392B;
+  --red-light: #F5E6E4;
+  --red-dark: #922B21;
+  --black: #1A1A1A;
+  --white: #FAFAF8;
+  --cream: #F7F4EE;
+  --green: #4A7C59;
+  --green-dark: #2D5A3D;
+  --gray: #6B7280;
+  --border: rgba(26,26,26,0.12);
+  --bento-in: #7A1515;
+  --bento-out: #111111;
+}
+
+body {
+  font-family: 'Noto Serif JP', serif;
+  background: var(--white);
+  color: var(--black);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════════════
+   BUILDER VIEW
+══════════════════════════════════════ */
+#builder-view { min-height: 100vh; display: flex; flex-direction: column; }
+
+.builder-header {
+  background: var(--black);
+  color: var(--white);
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--red);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo-block h1 {
+  font-family: 'Mochiy Pop One', sans-serif;
+  font-size: 1.7rem;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+
+.logo-block .tagline {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.header-badge {
+  background: var(--red);
+  color: var(--white);
+  font-family: 'Mochiy Pop One', sans-serif;
+  font-size: 0.68rem;
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.08em;
+}
+
+.builder-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 2rem 7rem;
+  width: 100%;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  margin-top: 3rem;
+}
+.section-label:first-child { margin-top: 0; }
+.section-label h2 { font-family: 'Mochiy Pop One', sans-serif; font-size: 1.05rem; color: var(--black); white-space: nowrap; }
+.section-divider { flex: 1; height: 1px; background: var(--border); }
+.section-counter { font-size: 0.73rem; color: var(--red); font-weight: 600; letter-spacing: 0.08em; background: var(--red-light); padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(192,57,43,0.2); white-space: nowrap; transition: background 0.2s; }
+.section-counter.done { color: var(--green-dark); background: #e8f0ea; border-color: rgba(42,90,61,0.2); }
+
+.menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 0.9rem; }
+.menu-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s; overflow: hidden; position: relative; user-select: none; }
+.menu-card:hover { border-color: var(--red); transform: translateY(-2px); box-shadow: 0 5px 18px rgba(192,57,43,0.11); }
+.menu-card.selected { border-color: var(--red); border-width: 2px; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+.menu-card.maxed:not(.selected) { opacity: 0.42; pointer-events: none; }
+
+.card-img-wrap { width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--cream); position: relative; display: flex; align-items: center; justify-content: center; padding: 10px; }
+.card-img-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform 0.28s ease; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08)); }
+.menu-card:hover .card-img-wrap img { transform: scale(1.05); }
+
+.qty-badge { position: absolute; top: 6px; left: 6px; min-width: 26px; height: 26px; background: var(--red); color: #fff; font-family: 'Mochiy Pop One', sans-serif; font-size: 0.72rem; border-radius: 13px; display: flex; align-items: center; justify-content: center; padding: 0 6px; opacity: 0; transform: scale(0.6); transition: all 0.18s ease; z-index: 3; pointer-events: none; }
+.menu-card.selected .qty-badge { opacity: 1; transform: scale(1); }
+
+.card-stepper { display: none; position: absolute; bottom: 8px; right: 8px; align-items: center; gap: 4px; z-index: 4; background: rgba(255,255,255,0.9); padding: 3px; border-radius: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.menu-card.selected .card-stepper { display: flex; }
+.step-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: var(--white); color: var(--black); font-size: 1.1rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.step-btn:hover { background: var(--red); color: var(--white); }
+
+.card-check { position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(0.5); transition: all 0.18s ease; z-index: 3; pointer-events: none; }
+.card-check::after { content: ''; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translateY(-1px); }
+.menu-card.selected .card-check { opacity: 1; transform: scale(1); }
+
+.card-info { padding: 0.55rem 0.7rem 0.65rem; border-top: 1px solid var(--border); }
+.card-name { font-size: 0.76rem; font-weight: 600; color: var(--black); line-height: 1.3; }
+.card-type { font-size: 0.66rem; color: var(--gray); margin-top: 2px; letter-spacing: 0.04em; }
+
+.chopsticks-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+.beverage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 0.75rem; }
+
+.letter-area { background: var(--cream); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; position: relative; }
+.letter-area::before { content: '✦'; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--cream); padding: 0 8px; color: var(--red); font-size: 1rem; }
+.letter-area label { display: block; font-size: 0.78rem; color: var(--gray); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+.letter-area textarea { width: 100%; background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-family: 'Noto Serif JP', serif; font-size: 0.9rem; color: var(--black); resize: vertical; min-height: 120px; line-height: 1.7; outline: none; transition: border-color 0.2s; }
+.letter-area textarea:focus { border-color: var(--red); }
+
+.pack-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); border-top: 1px solid var(--border); padding: 0.9rem 2rem; display: flex; align-items: center; justify-content: center; gap: 1rem; z-index: 200; box-shadow: 0 -4px 20px rgba(0,0,0,0.06); }
+.pack-status { font-size: 0.78rem; color: var(--gray); text-align: right; line-height: 1.4; }
+.pack-status span { color: var(--red); font-weight: 700; }
+.btn-pack { background: var(--red); color: var(--white); border: none; padding: 0.82rem 2.4rem; border-radius: 6px; font-family: 'Mochiy Pop One', sans-serif; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.btn-pack:hover { background: var(--red-dark); transform: translateY(-1px); }
+.btn-pack:disabled { background: #aaa; cursor: not-allowed; transform: none; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 500; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--white); border-radius: 14px; padding: 2.5rem; max-width: 480px; width: 90%; text-align: center; border-top: 4px solid var(--red); }
+.modal-box h3 { font-family: 'Mochiy Pop One', sans-serif; font-size: 1.3rem; color: var(--black); margin-bottom: 0.5rem; }
+.modal-box > p { font-size: 0.85rem; color: var(--gray); margin-bottom: 1.5rem; }
+.url-display { background: var(--cream); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem 1rem; font-size: 0.75rem; color: var(--black); word-break: break-all; font-family: monospace; margin-bottom: 1rem; text-align: left; max-height: 80px; overflow-y: auto; }
+.btn-copy { background: var(--green); color: var(--white); border: none; padding: 0.75rem 2rem; border-radius: 6px; font-family: 'Mochiy Pop One', sans-serif; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; width: 100%; margin-bottom: 0.7rem; }
+.btn-copy:hover { background: var(--green-dark); }
+.btn-close { background: none; border: 1px solid var(--border); padding: 0.6rem 1.5rem; border-radius: 6px; font-family: 'Noto Serif JP', serif; font-size: 0.85rem; cursor: pointer; color: var(--gray); transition: all 0.2s; width: 100%; }
+.btn-close:hover { border-color: var(--black); color: var(--black); }
+
+/* ══════════════════════════════════════
+   RECEIVER VIEW
+══════════════════════════════════════ */
+#receiver-view { display: none; min-height: 100vh; flex-direction: column; align-items: center; background: var(--cream); }
+
+#furoshiki-stage { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; cursor: pointer; z-index: 300; }
+#furoshiki-stage.lifting { animation: lidLift 0.85s cubic-bezier(0.4,0,0.2,1) forwards; }
+#furoshiki-stage.lifted { opacity: 0; pointer-events: none; }
+@keyframes lidLift { 0% { transform: translateY(0) scale(1); opacity: 1; } 35% { transform: translateY(-6%) scale(1.02); opacity: 1; } 100% { transform: translateY(-65%) scale(0.88); opacity: 0; } }
+
+.furoshiki-cloth { width: 300px; height: 300px; background: radial-gradient(ellipse at 32% 28%, #C0392B 0%, #8B2018 55%, #5C1010 100%); border-radius: 50% 50% 48% 52% / 48% 46% 54% 52%; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 24px 70px rgba(0,0,0,0.7); animation: floatGently 3.2s ease-in-out infinite; }
+@keyframes floatGently { 0%,100% { transform: translateY(0) rotate(-1.2deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
+.furoshiki-pattern { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; opacity: 0.12; background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.4) 10px, rgba(255,255,255,0.4) 11px); }
+.furoshiki-knot { width: 64px; height: 64px; background: #E74C3C; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: inset 0 -4px 10px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.35); z-index: 2; }
+.furoshiki-knot::before, .furoshiki-knot::after { content: ''; position: absolute; background: #C0392B; }
+.furoshiki-knot::before { width: 36px; height: 52px; top: -28px; left: 11px; transform: rotate(-20deg); border-radius: 50% 50% 40% 60%; }
+.furoshiki-knot::after { width: 36px; height: 52px; top: -28px; right: 9px; transform: rotate(20deg); border-radius: 50% 50% 60% 40%; }
+.tap-hint { color: rgba(255,255,255,0.45); font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; margin-top: 2.5rem; animation: pulse 2.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+#table-reveal { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2.5rem 1.5rem 3rem; animation: fadeUp 0.7s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+.table-header { text-align: center; margin-bottom: 2rem; }
+.table-header h1 { font-family: 'Mochiy Pop One', sans-serif; font-size: 1.6rem; color: var(--black); margin-bottom: 0.3rem; }
+.table-header p { font-size: 0.8rem; color: var(--gray); letter-spacing: 0.1em; }
+
+.dining-scene {
+  width: 100%; max-width: 880px; border-radius: 18px; padding: 2.5rem; position: relative;
+  background-color: #B8872A;
+  background-image: repeating-linear-gradient(88deg, transparent, transparent 22px, rgba(100,65,10,0.18) 22px, rgba(100,65,10,0.18) 23px),
+                    repeating-linear-gradient(0deg, transparent, transparent 30px, rgba(100,65,10,0.07) 30px, rgba(100,65,10,0.07) 31px);
+  box-shadow: 0 10px 50px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.scene-layout {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 2rem;
+  align-items: center; /* PERFECT VERTICAL CENTERING */
+}
+
+/* ── Dynamic Bento Box ── */
+.bento-box {
+  background: var(--bento-in);
+  border-radius: 14px;
+  padding: 1.2rem;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.45), inset 0 0 20px rgba(0,0,0,0.6);
+  border: 7px solid var(--bento-out);
+  position: relative;
+  width: fit-content; 
+  margin: 0 auto; /* PERFECT HORIZONTAL CENTERING */
+}
+
+.bento-label { font-family: 'Mochiy Pop One', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.5); letter-spacing: 0.22em; text-transform: uppercase; text-align: center; margin-bottom: 1.2rem; }
+
+/* Dynamic Flex Layout */
+.sushi-grid-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 0 auto;
+  transition: max-width 0.3s ease;
+}
+
+.bento-piece {
+  width: 100px;
+  height: 100px;
+  background: #1C1C1C;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, z-index 0.2s;
+  flex-shrink: 0;
+}
+
+.bento-piece:hover { transform: scale(1.07); z-index: 5; box-shadow: 0 8px 16px rgba(0,0,0,0.5); }
+.bento-piece img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.bento-piece .piece-tooltip { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.85); color: #fff; font-size: 0.62rem; letter-spacing: 0.05em; text-align: center; padding: 5px 2px; transform: translateY(100%); transition: transform 0.18s ease; font-family: 'Noto Serif JP', serif; }
+.bento-piece:hover .piece-tooltip { transform: translateY(0); }
+
+/* ── Right accessory column ── */
+.accessory-col { width: 100%; display: flex; flex-direction: column; gap: 1rem; }
+.acc-card { background: var(--white); border-radius: 10px; padding: 0.65rem; box-shadow: 0 3px 14px rgba(0,0,0,0.14); }
+.acc-img-wrap { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; background: var(--cream); border-radius: 7px; overflow: hidden; padding: 10px; }
+.acc-img-wrap img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08)); }
+
+.condiments-row { display: flex; gap: 0.7rem; justify-content: center; }
+.condiment-bowl { flex: 1; max-width: 88px; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: var(--white); box-shadow: 0 3px 12px rgba(0,0,0,0.14), inset 0 2px 5px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; padding: 5px; }
+.condiment-bowl img { width: 100%; height: 100%; object-fit: contain; }
+
+.letter-section { width: 100%; max-width: 880px; margin-top: 1.8rem; }
+.envelope-btn { display: flex; align-items: center; gap: 1.1rem; background: var(--white); border: 2px solid var(--red); border-radius: 12px; padding: 1.2rem 1.8rem; cursor: pointer; transition: all 0.2s ease; width: 100%; text-align: left; }
+.envelope-btn:hover { background: var(--red-light); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(192,57,43,0.14); }
+.envelope-icon { width: 46px; height: 46px; background: var(--red); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.25rem; color: #fff; }
+.envelope-btn h3 { font-family: 'Mochiy Pop One', sans-serif; font-size: 1rem; color: var(--red-dark); }
+.envelope-btn p { font-size: 0.76rem; color: var(--gray); margin-top: 3px; }
+
+.receiver-footer { text-align: center; padding: 2rem 0; font-size: 0.75rem; color: var(--gray); letter-spacing: 0.12em; display: flex; flex-direction: column; gap: 10px;}
+.build-link { color: var(--red); font-weight: bold; text-decoration: none; padding: 5px 15px; border: 1px solid var(--red); border-radius: 20px; display: inline-block; transition: 0.2s; }
+.build-link:hover { background: var(--red); color: white; }
+
+.scroll-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.68); z-index: 600; align-items: center; justify-content: center; }
+.scroll-overlay.open { display: flex; }
+.scroll-container { position: relative; width: 90%; max-width: 500px; }
+.scroll-rod { width: 100%; height: 22px; background: linear-gradient(180deg, #D4A84B 0%, #8B6914 50%, #D4A84B 100%); border-radius: 4px; box-shadow: 0 3px 10px rgba(0,0,0,0.32); position: relative; z-index: 2; }
+.scroll-rod::before, .scroll-rod::after { content: ''; position: absolute; width: 22px; height: 22px; background: #5C4208; border-radius: 50%; top: 0; }
+.scroll-rod::before { left: -7px; } .scroll-rod::after  { right: -7px; }
+.scroll-body { background: #FDF8EC; margin: 0 7px; padding: 2.5rem 2.5rem 3rem; box-shadow: 0 4px 22px rgba(0,0,0,0.22); position: relative; overflow: hidden; animation: scrollUnroll 0.55s ease forwards; max-height: 70vh; overflow-y: auto; }
+@keyframes scrollUnroll { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0% 0); } }
+.scroll-decoration { text-align: center; font-size: 1.1rem; color: var(--red); margin-bottom: 1.5rem; letter-spacing: 0.3em; }
+.scroll-message { font-family: 'Noto Serif JP', serif; font-size: 0.93rem; line-height: 2; color: #2A1A00; white-space: pre-wrap; word-break: break-word; }
+.scroll-close { position: absolute; top: -13px; right: -13px; width: 30px; height: 30px; background: var(--black); color: var(--white); border: none; border-radius: 50%; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+@media (max-width: 640px) {
+  .scene-layout { grid-template-columns: 1fr; }
+  .accessory-col { width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .acc-card { flex: 1; min-width: 120px; }
+  .chopsticks-grid { grid-template-columns: repeat(3, 1fr); }
+  .builder-header { flex-direction: column; gap: 0.6rem; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="builder-view">
+  <header class="builder-header">
+    <div class="logo-block">
+      <h1>弁当箱 Bento</h1>
+      <div class="tagline">A love letter, delivered fresh</div>
+    </div>
+    <div class="header-badge">Curate your order ✦</div>
+  </header>
+
+  <main class="builder-main">
+    <div class="section-label">
+      <h2>Sushi Selection</h2>
+      <div class="section-divider"></div>
+      <div class="section-counter" id="sushi-counter">0 / 6 pieces</div>
+    </div>
+    <p style="font-size:0.78rem;color:var(--gray);margin-bottom:1.2rem;letter-spacing:0.03em;">
+      Click to add · click again to add more of the same · use − to remove. Max 6 pieces total.
+    </p>
+    <div class="menu-grid" id="sushi-grid"></div>
+
+    <div class="section-label">
+      <h2>Chopsticks</h2>
+      <div class="section-divider"></div>
+      <div class="section-counter" id="chop-counter">Choose 1</div>
+    </div>
+    <div class="chopsticks-grid" id="chopsticks-grid"></div>
+
+    <div class="section-label">
+      <h2>Beverage</h2>
+      <div class="section-divider"></div>
+      <div class="section-counter" id="bev-counter">Choose 1</div>
+    </div>
+    <div class="beverage-grid" id="beverage-grid"></div>
+
+    <div class="section-label">
+      <h2>Your Love Letter</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="letter-area">
+      <label>Write something sweet ♡</label>
+      <textarea id="love-letter" placeholder="Dear you... I packed this with all my heart. Every piece is chosen because it made me think of you.&#10;&#10;With love ♡"></textarea>
+    </div>
+  </main>
+
+  <div class="pack-bar">
+    <div class="pack-status" id="pack-status">Pick at least 1 sushi, chopsticks &amp; a beverage</div>
+    <button class="btn-pack" id="btn-pack" disabled>Pack My Bento ✦</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="url-modal">
+  <div class="modal-box">
+    <h3>Your bento is packed! ✦</h3>
+    <p>Share this link with your special someone ♡</p>
+    <div class="url-display" id="url-display"></div>
+    <button class="btn-copy" id="btn-copy">Copy Link</button>
+    <button class="btn-close" onclick="document.getElementById('url-modal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<div id="receiver-view">
+  <div id="furoshiki-stage">
+    <div class="furoshiki-cloth">
+      <div class="furoshiki-pattern"></div>
+      <div class="furoshiki-knot"></div>
+    </div>
+    <div class="tap-hint">Tap to open your gift</div>
+  </div>
+
+  <div id="table-reveal" style="display:none;">
+    <div class="table-header">
+      <h1>Your Bento Box ♡</h1>
+      <p>Curated with care, just for you</p>
+    </div>
+
+    <div class="dining-scene">
+      <div class="scene-layout">
+
+        <div class="bento-box">
+          <div class="bento-label">弁当箱 · Your selection</div>
+          <div class="sushi-grid-inner" id="sushi-display"></div>
+        </div>
+
+        <div class="accessory-col">
+          <div class="acc-card" id="beverage-display">
+            <div class="acc-img-wrap"><img src="" alt="Beverage" id="bev-img"></div>
+          </div>
+
+          <div class="acc-card" id="chopsticks-display">
+            <div class="acc-img-wrap"><img src="" alt="Chopsticks" id="chop-img"></div>
+          </div>
+
+          <div class="condiments-row">
+            <div class="condiment-bowl" title="Soy Sauce"><img src="soy sauce.jpg" alt="Soy sauce"></div>
+            <div class="condiment-bowl" title="Wasabi"><img src="wasabi.jpg" alt="Wasabi"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="letter-section">
+      <button class="envelope-btn" id="open-letter-btn">
+        <div class="envelope-icon">✉</div>
+        <div>
+          <h3>Read Your Letter</h3>
+          <p>A message is waiting for you inside</p>
+        </div>
+      </button>
+    </div>
+
+    <div class="receiver-footer">
+      <span>Made with love · 弁当箱 Bento</span>
+      <span><a href="?" class="build-link">✦ Build Your Own Bento ✦</a></span>
+    </div>
+  </div>
+</div>
+
+<div class="scroll-overlay" id="scroll-modal">
+  <div class="scroll-container">
+    <button class="scroll-close" onclick="document.getElementById('scroll-modal').classList.remove('open')">✕</button>
+    <div class="scroll-rod"></div>
+    <div class="scroll-body">
+      <div class="scroll-decoration">✦ ♡ ✦</div>
+      <div class="scroll-message" id="scroll-message"></div>
+    </div>
+    <div style="margin-top:-2px;position:relative;z-index:2;"><div class="scroll-rod"></div></div>
+  </div>
+</div>
+
+<script>
+// Data updated to match local files exactly
+const SUSHI = [
+  { file:'sushi 1.jpg',   name:'Salmon Nigiri',   type:'Nigiri'  },
+  { file:'sushi 2.jpg',   name:'Tuna Nigiri',     type:'Nigiri'  },
+  { file:'sushi 3.jpg',   name:'Dragon Roll',     type:'Roll'    },
+  { file:'sushi 4.jpg',   name:'Spicy Tuna Roll', type:'Roll'    },
+  { file:'sushi 5.jpg',   name:'Rainbow Roll',    type:'Roll'    },
+  { file:'sushi 6.jpg',   name:'Shrimp Tempura',  type:'Roll'    },
+  { file:'sushi 7.jpg',   name:'Ebi Nigiri',      type:'Nigiri'  },
+  { file:'sushi 8.jpg',   name:'Cucumber Roll',   type:'Maki'    },
+  { file:'sushi 9.jpg',   name:'Ikura Gunkan',    type:'Gunkan'  },
+  { file:'sushi 10.jpg',  name:'Tamago Nigiri',   type:'Nigiri'  },
+];
+const CHOPS = [
+  { file:'chopsticks 1.jpg', name:'Ebony Wood',     type:'Chopsticks' },
+  { file:'chopsticks 2.jpg', name:'Bamboo Classic', type:'Chopsticks' },
+  { file:'chopsticks 3.jpg', name:'Lacquered Red',  type:'Chopsticks' },
+  { file:'chopsticks 4.jpg', name:'Cherry Blossom', type:'Chopsticks' },
+  { file:'chopsticks 5.jpg', name:'Natural Pine',   type:'Chopsticks' },
+];
+const BEVS = [
+  { file:'sprite.jpg',            name:'Sprite',            type:'Soft Drink' },
+  { file:'diet coke.jpg',         name:'Diet Coke',         type:'Soft Drink' },
+  { file:'matcha.jpg',            name:'Matcha Latte',      type:'Hot Drink'  },
+  { file:'yakult.jpg',            name:'Yakult',            type:'Probiotic'  },
+  { file:'tea.jpg',               name:'Green Tea',         type:'Tea'        },
+  { file:'hot coffee.jpg',        name:'Hot Coffee',        type:'Coffee'     },
+  { file:'vietnamese coffee.jpg', name:'Vietnamese Coffee', type:'Coffee'     },
+];
+
+let sushiQty = {};
+let selChop = null;
+let selBev = null;
+
+function totalPieces() {
+  return Object.values(sushiQty).reduce((a,b)=>a+b,0);
+}
+
+function makeSushiCard(item, idx) {
+  const qty = sushiQty[idx] || 0;
+  const total = totalPieces();
+  const isSelected = qty > 0;
+  const atMax = total >= 6 && !isSelected;
+
+  const card = document.createElement('div');
+  card.className = 'menu-card' + (isSelected ? ' selected' : '') + (atMax ? ' maxed' : '');
+
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      <img src="${item.file}" alt="${item.name}" loading="lazy">
+      <div class="qty-badge">${qty > 1 ? '×'+qty : '✓'}</div>
+      <div class="card-stepper">
+        <button class="step-btn minus-btn" data-idx="${idx}" title="Remove one">−</button>
+        <button class="step-btn plus-btn"  data-idx="${idx}" title="Add one">+</button>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">${item.name}</div>
+      <div class="card-type">${item.type}</div>
+    </div>`;
+
+  card.querySelector('.card-img-wrap').addEventListener('click', (e) => {
+    if (e.target.closest('.card-stepper')) return;
+    if (totalPieces() < 6) {
+      sushiQty[idx] = (sushiQty[idx] || 0) + 1;
+      renderSushi();
+    }
+  });
+
+  card.querySelector('.minus-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (sushiQty[idx] > 1) sushiQty[idx]--;
+    else delete sushiQty[idx];
+    renderSushi();
+  });
+
+  card.querySelector('.plus-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (totalPieces() < 6) {
+      sushiQty[idx] = (sushiQty[idx] || 0) + 1;
+      renderSushi();
+    }
+  });
+
+  return card;
+}
+
+function renderSushi() {
+  const grid = document.getElementById('sushi-grid');
+  grid.innerHTML = '';
+  SUSHI.forEach((item, i) => grid.appendChild(makeSushiCard(item, i)));
+  const t = totalPieces();
+  const counter = document.getElementById('sushi-counter');
+  counter.textContent = `${t} / 6 pieces`;
+  counter.className = 'section-counter' + (t > 0 ? ' done' : '');
+  updatePackBtn();
+}
+
+function makeSingleCard(item, idx, selectedIdx, clickFn) {
+  const isSelected = selectedIdx === idx;
+  const card = document.createElement('div');
+  card.className = 'menu-card' + (isSelected ? ' selected' : '');
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      <img src="${item.file}" alt="${item.name}" loading="lazy">
+      <div class="card-check"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">${item.name}</div>
+      <div class="card-type">${item.type}</div>
+    </div>`;
+  card.addEventListener('click', () => clickFn(idx));
+  return card;
+}
+
+function renderChops() {
+  const grid = document.getElementById('chopsticks-grid');
+  grid.innerHTML = '';
+  CHOPS.forEach((item,i) => grid.appendChild(makeSingleCard(item,i,selChop,(idx)=>{
+    selChop = selChop===idx ? null : idx;
+    renderChops();
+  })));
+  const c = document.getElementById('chop-counter');
+  c.textContent = selChop!==null ? '✓ Chosen' : 'Choose 1';
+  c.className = 'section-counter' + (selChop!==null ? ' done' : '');
+  updatePackBtn();
+}
+
+function renderBevs() {
+  const grid = document.getElementById('beverage-grid');
+  grid.innerHTML = '';
+  BEVS.forEach((item,i) => grid.appendChild(makeSingleCard(item,i,selBev,(idx)=>{
+    selBev = selBev===idx ? null : idx;
+    renderBevs();
+  })));
+  const c = document.getElementById('bev-counter');
+  c.textContent = selBev!==null ? '✓ Chosen' : 'Choose 1';
+  c.className = 'section-counter' + (selBev!==null ? ' done' : '');
+  updatePackBtn();
+}
+
+function updatePackBtn() {
+  const btn = document.getElementById('btn-pack');
+  const status = document.getElementById('pack-status');
+  const t = totalPieces();
+  const ok = t > 0 && selChop !== null && selBev !== null;
+  btn.disabled = !ok;
+  if (ok) {
+    status.innerHTML = `<span>${t}</span> piece${t>1?'s':''} · <span>1</span> chopstick set · <span>1</span> beverage — ready!`;
+  } else {
+    const miss = [];
+    if (t===0) miss.push('at least 1 sushi');
+    if (selChop===null) miss.push('chopsticks');
+    if (selBev===null) miss.push('a beverage');
+    status.innerHTML = `Pick ${miss.join(', ')}`;
+  }
+}
+
+function sushiToArray() {
+  const arr = [];
+  Object.entries(sushiQty).forEach(([idx, qty]) => {
+    for (let q=0; q<qty; q++) arr.push(Number(idx));
+  });
+  return arr;
+}
+
+function generateURL() {
+  const data = {
+    s: sushiToArray(),
+    c: selChop,
+    b: selBev,
+    l: document.getElementById('love-letter').value || '',
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  return `${location.origin}${location.pathname}?bento=${encoded}`;
+}
+
+document.getElementById('btn-pack').addEventListener('click', () => {
+  document.getElementById('url-display').textContent = generateURL();
+  document.getElementById('url-modal').classList.add('open');
+});
+
+document.getElementById('btn-copy').addEventListener('click', function() {
+  navigator.clipboard.writeText(document.getElementById('url-display').textContent).then(() => {
+    this.textContent = 'Copied! ✓';
+    this.style.background = '#2D5A3D';
+    setTimeout(() => { this.textContent='Copy Link'; this.style.background=''; }, 2200);
+  });
+});
+
+/* ══════════════════════════════════════
+   RECEIVER LOGIC
+══════════════════════════════════════ */
+function loadReceiver(data) {
+  document.getElementById('builder-view').style.display = 'none';
+  document.getElementById('receiver-view').style.display = 'flex';
+
+  const fur = document.getElementById('furoshiki-stage');
+  fur.addEventListener('click', () => {
+    fur.removeEventListener('click', arguments.callee);
+    fur.classList.add('lifting');
+    setTimeout(() => {
+      fur.classList.add('lifted');
+      const reveal = document.getElementById('table-reveal');
+      reveal.style.display = 'flex';
+    }, 760);
+  });
+
+  const display = document.getElementById('sushi-display');
+  display.innerHTML = '';
+  const pieces = data.s || [];
+  
+  // Format the box width dynamically to hug the pieces tight
+  const total = pieces.length;
+  if(total === 1) display.style.maxWidth = "110px";
+  else if(total === 2) display.style.maxWidth = "225px";
+  else if(total === 3) display.style.maxWidth = "340px";
+  else if(total === 4) display.style.maxWidth = "225px"; // forces 2x2 grid
+  else display.style.maxWidth = "340px"; // 5 or 6 forces max 3 per row
+
+  // Render strictly the selected pieces
+  pieces.forEach(pieceIdx => {
+    const item = SUSHI[pieceIdx];
+    if (item) {
+      const piece = document.createElement('div');
+      piece.className = 'bento-piece';
+      piece.innerHTML = `<img src="${item.file}" alt="${item.name}"><div class="piece-tooltip">${item.name}</div>`;
+      display.appendChild(piece);
+    }
+  });
+
+  if (data.b !== null && data.b !== undefined) {
+    const bev = BEVS[data.b];
+    if (bev) {
+      document.getElementById('bev-img').src = bev.file;
+      document.getElementById('bev-img').alt = bev.name;
+    }
+  }
+
+  if (data.c !== null && data.c !== undefined) {
+    const chop = CHOPS[data.c];
+    if (chop) {
+      document.getElementById('chop-img').src = chop.file;
+      document.getElementById('chop-img').alt = chop.name;
+    }
+  }
+
+  const letter = data.l || '';
+  document.getElementById('open-letter-btn').addEventListener('click', () => {
+    document.getElementById('scroll-message').textContent =
+      letter || '(No message included… but the food says it all ♡)';
+    document.getElementById('scroll-modal').classList.add('open');
+  });
+}
+
+(function init() {
+  const param = new URLSearchParams(location.search).get('bento');
+  if (param) {
+    try {
+      const data = JSON.parse(decodeURIComponent(escape(atob(param))));
+      loadReceiver(data);
+    } catch(e) {
+      console.error('Bad bento data', e);
+      startBuilder();
+    }
+  } else {
+    startBuilder();
+  }
+})();
+
+function startBuilder() {
+  document.getElementById('builder-view').style.display = 'flex';
+  renderSushi();
+  renderChops();
+  renderBevs();
+}
+</script>
+</body>
+</html>
