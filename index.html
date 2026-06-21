@@ -426,15 +426,15 @@ const SUSHI = [
 ];
 const CHOPS = [
   { file:'chopsticks 1.jpg', name:'Ebony Wood',     type:'Chopsticks' },
-  { file:'chopsticks 2.jpg', name:'Lacquered Red', type:'Chopsticks' },
-  { file:'chopsticks 3.jpg', name:'Bamboo Classic',  type:'Chopsticks' },
+  { file:'chopsticks 2.jpg', name:'Lacquered Red',  type:'Chopsticks' },
+  { file:'chopsticks 3.jpg', name:'Bamboo Classic', type:'Chopsticks' },
   { file:'chopsticks 4.jpg', name:'Cherry Blossom', type:'Chopsticks' },
   { file:'chopsticks 5.jpg', name:'Natural Pine',   type:'Chopsticks' },
 ];
 const BEVS = [
   { file:'sprite.jpg',            name:'Sprite',            type:'Soft Drink' },
   { file:'diet coke.jpg',         name:'Diet Coke',         type:'Soft Drink' },
-  { file:'matcha.jpg',            name:'Matcha Latte',      type:' Drink'  },
+  { file:'matcha.jpg',            name:'Matcha Latte',      type:'Hot Drink'  },
   { file:'yakult.jpg',            name:'Yakult',            type:'Probiotic'  },
   { file:'tea.jpg',               name:'Green Tea',         type:'Tea'        },
   { file:'hot coffee.jpg',        name:'Hot Coffee',        type:'Coffee'     },
@@ -584,7 +584,8 @@ function generateURL() {
     b: selBev,
     l: document.getElementById('love-letter').value || '',
   };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  // FIX: Properly encode the final Base64 string so the '+' symbols are preserved in the URL
+  const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
   return `${location.origin}${location.pathname}?bento=${encoded}`;
 }
 
@@ -670,7 +671,9 @@ function loadReceiver(data) {
   const param = new URLSearchParams(location.search).get('bento');
   if (param) {
     try {
-      const data = JSON.parse(decodeURIComponent(escape(atob(param))));
+      // FIX: Replace the invisible spaces back to '+' symbols before decoding
+      const fixedParam = param.replace(/ /g, '+');
+      const data = JSON.parse(decodeURIComponent(escape(atob(fixedParam))));
       loadReceiver(data);
     } catch(e) {
       console.error('Bad bento data', e);
