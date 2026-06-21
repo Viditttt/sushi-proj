@@ -188,7 +188,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 220px;
   gap: 2rem;
-  align-items: center; /* PERFECT VERTICAL CENTERING */
+  align-items: center;
 }
 
 /* ── Dynamic Bento Box ── */
@@ -200,7 +200,7 @@ body {
   border: 7px solid var(--bento-out);
   position: relative;
   width: fit-content; 
-  margin: 0 auto; /* PERFECT HORIZONTAL CENTERING */
+  margin: 0 auto; 
 }
 
 .bento-label { font-family: 'Mochiy Pop One', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.5); letter-spacing: 0.22em; text-transform: uppercase; text-align: center; margin-bottom: 1.2rem; }
@@ -434,9 +434,9 @@ const CHOPS = [
 const BEVS = [
   { file:'sprite.jpg',            name:'Sprite',            type:'Soft Drink' },
   { file:'diet coke.jpg',         name:'Diet Coke',         type:'Soft Drink' },
-  { file:'matcha.jpg',            name:'Matcha Latte',      type:'Drink'  },
+  { file:'matcha.jpg',            name:'Matcha Latte',      type:' Drink'  },
   { file:'yakult.jpg',            name:'Yakult',            type:'Probiotic'  },
-  { file:'tea.jpg',               name:'Tea',         type:'Tea'        },
+  { file:'tea.jpg',               name:'Green Tea',         type:'Tea'        },
   { file:'hot coffee.jpg',        name:'Hot Coffee',        type:'Coffee'     },
   { file:'vietnamese coffee.jpg', name:'Vietnamese Coffee', type:'Coffee'     },
 ];
@@ -577,6 +577,7 @@ function sushiToArray() {
   return arr;
 }
 
+// Generates the long base64 URL
 function generateURL() {
   const data = {
     s: sushiToArray(),
@@ -584,14 +585,39 @@ function generateURL() {
     b: selBev,
     l: document.getElementById('love-letter').value || '',
   };
-  // FIX: Properly encode the final Base64 string so the '+' symbols are preserved in the URL
   const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
   return `${location.origin}${location.pathname}?bento=${encoded}`;
 }
 
-document.getElementById('btn-pack').addEventListener('click', () => {
-  document.getElementById('url-display').textContent = generateURL();
+// Intercept the click to fetch a shortened URL
+document.getElementById('btn-pack').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-pack');
+  const originalText = btn.textContent;
+  
+  // Show loading state
+  btn.textContent = 'Packing... ✦';
+  btn.disabled = true;
+
+  const longUrl = generateURL();
+  let displayUrl = longUrl; // Fallback
+
+  try {
+    // Call the TinyURL API to shorten the massive link
+    const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+    if (res.ok) {
+      displayUrl = await res.text();
+    }
+  } catch (error) {
+    console.warn("Could not shorten URL, using standard link instead.");
+  }
+
+  // Display the result
+  document.getElementById('url-display').textContent = displayUrl;
   document.getElementById('url-modal').classList.add('open');
+  
+  // Reset button state
+  btn.textContent = originalText;
+  btn.disabled = false;
 });
 
 document.getElementById('btn-copy').addEventListener('click', function() {
@@ -624,15 +650,13 @@ function loadReceiver(data) {
   display.innerHTML = '';
   const pieces = data.s || [];
   
-  // Format the box width dynamically to hug the pieces tight
   const total = pieces.length;
   if(total === 1) display.style.maxWidth = "110px";
   else if(total === 2) display.style.maxWidth = "225px";
   else if(total === 3) display.style.maxWidth = "340px";
-  else if(total === 4) display.style.maxWidth = "225px"; // forces 2x2 grid
-  else display.style.maxWidth = "340px"; // 5 or 6 forces max 3 per row
+  else if(total === 4) display.style.maxWidth = "225px"; 
+  else display.style.maxWidth = "340px"; 
 
-  // Render strictly the selected pieces
   pieces.forEach(pieceIdx => {
     const item = SUSHI[pieceIdx];
     if (item) {
@@ -671,7 +695,6 @@ function loadReceiver(data) {
   const param = new URLSearchParams(location.search).get('bento');
   if (param) {
     try {
-      // FIX: Replace the invisible spaces back to '+' symbols before decoding
       const fixedParam = param.replace(/ /g, '+');
       const data = JSON.parse(decodeURIComponent(escape(atob(fixedParam))));
       loadReceiver(data);
